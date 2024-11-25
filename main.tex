@@ -1,0 +1,808 @@
+\documentclass[a4paper, 12pt, oneside, onecolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{systeme}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{gensymb}
+\usepackage{indentfirst}
+\usepackage{bigints}
+\usepackage{esint}
+\usepackage{harpoon}
+\usepackage{relsize}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{bm}
+\usepackage{multicol}
+\usepackage[useregional]{datetime2}
+\usepackage[colorlinks = true, linkcolor = blue, hypertexnames = true]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    allcolors=blue	
+}
+\usepackage[super, square]{natbib}
+\usepackage{lipsum}
+
+
+\newcommand{\cald}{{\rm d}}
+\renewcommand\thesection{\Roman{section}}
+\renewcommand{\thesubsection}{\thesection.\Roman{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\Roman{subsubsection}}
+
+\geometry{a4paper, scale = 0.85}
+\linespread{1.5}
+
+\setlength{\parindent}{2em}
+
+
+\begin{document}
+\title{Monte Carlo Simulation of the Famous Ising Model:\\Fortran Implementation}
+\author{Gauss T. Chang
+\thanks{Department of Physics, National Taiwan University, Taipei, Taiwan 
+\texttt{b09501028@ntu.edu.tw}}}
+
+
+\date{\DTMdate{2024-11-25}}
+\maketitle
+\begin{abstract}
+	Combining the course content of the history of physics with the topics I am interested in, I have decided to explore the development process of quantum mechanics in this article. Quantum mechanics started from a state of complete unknown and has been explored by many outstanding predecessors to reach the remarkable achievements we see today. I will focus on analyzing how wave mechanics combined with matrix mechanics to form the version we are fortunate to see in standard textbooks now.
+\end{abstract}
+\begin{multicols}{2}
+\section{OLD THEORY}
+In July, September, and November of 1913, the ``The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science'' published three consecutive papers by Bohr\cite{doi:10.1080/14786441308634955}\cite{doi:10.1080/14786441308634993}\cite{doi:10.1080/14786441308635031}, marking the official proposal of the Bohr model. These three papers became classics in the history of physics and are known as the ``trilogy'' of the Bohr model\cite{bohr1985niels}. In the first paper, he analyzed the hydrogen atom using the Bohr model. In the second paper, he discussed the structure of other atoms and the periodic table. In the third paper, he explored molecular structure.
+\begin{align}
+	E_n
+	&= \frac{m_0 e^4}{8 \varepsilon_0^2 h^2} \frac{1}{n^2}
+\end{align}
+This is the well known Bohr model of the hydrogen atom. In this model, electrons are located in different orbits, and their energy is labeled by the integer $n$. Subsequently, the ``Wilson-Sommerfeld quantization rule,'' independently discovered by Wilson\cite{wilsonquantum} and Sommerfeld\cite{https://doi.org/10.1002/andp.19163561702}, extended this model to elliptical orbits and proposed the quantization condition:
+\begin{align}
+	J
+	&= \oint_C p_i \,\cald q_i = n h
+\end{align}
+That is, the value of this integral $J$ must be an integer multiple of $h$. In this case, the energy $E$ can be represented by $J$. In theoretical mechanics, we usually call $J$ ``action'', and the energy $E$ is corresponding to the system's Hamiltonian.
+\begin{align}
+	E
+	&= - \frac{m_0 e^4}{8 \varepsilon_0^2} \frac{1}{J^2}
+\end{align} 
+According to the Hamilton–Jacobi equation, accompanying $J$, there will be a $\nu$, which can be expressed as:
+\begin{align}
+	\nu
+	&= \frac{\partial H}{\partial J} = \frac{m_0 e^4}{4 \varepsilon_0^2} \frac{1}{J^3} = \frac{m_0 e^4}{4 \varepsilon_0^2 h^3} \frac{1}{n^3}\label{eq4}
+\end{align}
+We call $\nu$ the ``angular frequency.'' In this simple model, $\nu$ is the angular frequency of the electron orbiting the nucleus.
+
+In the old quantum theory\cite{Kuhn_1968}, this transitional theory could explain most phenomena, but this model was still not accepted by everyone at the time; the debate about whether the nature of radiation was wave or particle remained unresolved.
+
+
+\section{BORN'S THEORY}
+Born wanted to find a transformation from classical mechanics to quantum mechanics formulas. His idea was as follows: start from special cases, summarize the rules of transformation, and finally extend it to general cases. There are two cornerstones of Born's theory:
+\begin{enumerate}
+	\item Action-Angular Frequency System $(J, \omega)$
+	\item Bohr's correspondence principle\cite{nielsen2013correspondence}
+\end{enumerate}
+The first one is the Hamilton-Jacobi equation. Regardless of how $J$ and $\omega$ changes, the Hamilton-Jacobi equation remains the same. The second one, Bohr's correspondence principle, means that when quantum numbers are relatively large, quantum mechanics formulas should transition to classical mechanics, corresponding to our macroscopic observation results.
+
+We can follow Bohr's research to analyze the second point. First, we have already seen in eq.\ref{eq4} that the frequency of an electron orbiting the nucleus is inversely proportional to $n^3$. At the same time, according to Bohr's theory, the transition frequency of an electron should be the difference between the stationary state energies, which is
+\begin{align}
+	\nu
+	&= \frac{E_{n + \Delta n} - E_{n}}{h} \\
+	&= \frac{m_0 e^4}{8 \varepsilon_0^2 h^3} \left[ \frac{1}{n^2} - \frac{1}{\left( n + \Delta n \right)^2 } \right]
+\end{align}
+then, we take $n \gg \Delta n$, use Taylor expansion to make some approximation, and obtain the following result
+\begin{align}
+	\nu
+	&\approx \frac{m_0 e^4}{8 \varepsilon_0^2 h^3} \frac{\Delta n}{n^3} = \Delta n \cdot \nu_e \label{eq7}
+\end{align}
+The radiation frequency is an integer multiple of the orbital frequency. Physically, eq.\ref{eq7} is the classical electromagnetic radiation formula, corresponding to the light of the respective frequency emitted by orbital radiation. When $\Delta n$ is large, it represents higher-order harmonics. In this way, Bohr successfully transitioned the quantum formula to the classical formula.
+
+Born went a step further and generalized it to the Hamilton-Jacobi equation. For the classical action-angular frequency, we have the relationship between orbital frequency and radiation frequency,
+\begin{align}
+	\nu_e
+	&= \frac{\partial H}{\partial J} \\
+	\nu
+	&= \Delta n \cdot \nu_e = \alpha \nu_e
+\end{align}
+From these two relations, we can obtain the classical radiation-frequency expression:
+\begin{align}
+	\nu
+	&= \alpha \cdot \frac{\cald H}{\cald J}
+\end{align}
+
+Following by the quantum expressions, the value of action $J$ is an integer. Not surprisingly, its incremental value is also integer.
+\begin{align}
+	J
+	&= n h, \quad \Delta J = \tau h
+\end{align}
+Now we can consider the transition between two energy levels, which is obviously the difference between the two energies divided by $h$.
+\begin{align}
+	h \nu \left( n, n - \tau \right)
+	&= E \left[ J \left( n \right) \right] - E \left[ J \left( n - \tau \right) \right] \\
+	\Rightarrow \nu \left( n, n - \tau \right)
+	&= \frac{E \left[ J \left( n \right) \right] - E \left[ J \left( n - \tau \right) \right]}{h} \label{eq14} 
+\end{align}
+Then we perform a Taylor expansion on eq.\ref{eq14}, and the first-order approximation we get is the expression of eq.\ref{eq15}.
+\begin{align}
+	\nu \left( n, n - \tau \right)
+	&\approx \frac{1}{h} \frac{\cald H}{\cald J} \cdot \Delta J  = \tau \cdot \frac{\cald H}{\cald J} \label{eq15}
+\end{align}
+Starting from eq.\ref{eq15}, Born further proposed Born's correspondence principle.
+\begin{align}
+	\frac{\cald \varphi \left( n \right)}{\cald n}
+	& \longleftrightarrow \frac{\varphi \left( n \right) - \varphi \left( n - \tau \right)}{\tau}
+\end{align}
+That is to say, whatever is differentiated in the classical formula corresponds to taking the finite differences in the quantum formula. 
+
+Born's correspondence principle has a strong physical meaning, showing the result of transitions from the $n$-th energy level to lower energy levels. However, mathematically, the difference can be a forward difference, a backward difference, or of course, a central difference. Born used the backward difference here, but there is no physical requirement to necessarily use the backward difference. The consequences of using the backward difference laid the groundwork for what Heisenberg would face in the future.
+
+\section{HELGOLAND}
+Summer, 1925, a young man recently arrived on the German island of Heligoland, located in the southeastern part of the North Sea. He appeared to be a simple farm boy with short, golden hair. His name was Werner Karl Heisenberg, and he was preparing to become a private tutor in Göttingen next semester.
+
+Just this June, Heisenberg suddenly developed a severe pollen allergy, so he came to this island, which has almost no pollen, to recuperate. During this time, he carefully pondered the current state of quantum mechanics. Before coming to Heligoland, Heisenberg was a student of Born. While recuperating here, he carefully recalled Born's theory mentioned in the previous section.
+
+Heisenberg reflected on the specific process of Bohr's theory and discovered a problem: Bohr seemed to focus more on the electron's specific orbit and its frequency. However, the fact is that no one has ever seen an electron revolving around an orbit, and of course, no one has actually measured their specific frequencies. What is actually measured in experiments is the intensity of electromagnetic radiation. The frequencies are related to the position $x \left( t \right)$, while the intensity is related to the square of $x\left( t \right)$. That is, $x^2 \left( t \right)$.
+
+Since the quantum situation deviates significantly from the classical situation, it is certainly not possible to use the classical picture to imagine the unobservable motion of electrons. Heisenberg vaguely felt that what should be studied is actually the visible and tangible spectral lines, rather than the unobservable specific behavior of electrons. \textbf{Quantum mechanics should be built on observable quantities}.
+
+According to Heisenberg later, this idea was inspired by Einstein\cite{heisenberg1971physics}. In the special theory of relativity, time and space need to be defined by observable quantities. The error in Newtonian physics lies in presupposing an unobservable absolute space-time and limiting the description of particles to three-dimensional space-time points.
+
+Heisenberg discovered that $x \left(t \right)$ corresponds to an unobservable quantity, which is the reason for Born's failure. At the same time, observable quantities are all consistently related to $x^2 \left(t \right)$. For example, electric dipole radiation is related to $x^2$
+\begin{align}
+	- \left( \frac{\cald E}{\cald t} \right)_r
+	&= \frac{e^2 \left| \ddot r \right|^2 }{6 \pi \varepsilon_0 c^3} \\
+	\Rightarrow \left<- \frac{\cald E}{\cald t} \right>
+	&= \frac{\omega_0^4 e^2 \left| x_0 \right|^2}{12 \pi \varepsilon_0 c^3}
+\end{align}
+and it is connected to Einstein's spontaneous emission coefficient, which is also $x^2$, too.
+\begin{align}
+	A_m^n
+	&= \frac{\omega_0^3 e^2 \left| x_0 \right|^2}{2 \pi \varepsilon_0 c^3}
+\end{align}
+
+In electromagnetism, the vector field $\bm{A}$, which is related to $x$, is a well-known unobservable quantity.
+Heisenberg realized that he should seek a quantization scheme corresponding to $x^2$, solving the problem from the perspective of mathematical correspondence rather than addressing specific problems or situations.
+
+From this point on, physicists could finally fight quantum problems systematically, rather than making self-serving arguments case by case.
+
+His weapon was Born's correspondence principle. Let's follow Heisenberg's line of thought and see where this new way of thinking can take us. The first thing Heisenberg did was to organize the experimental results at hand and then make the correspondence between classical and quantum.
+
+For the classical case, the radiation frequency is an integer multiple of the fundamental frequency, denoted here by $\alpha$, where $\alpha$ is an integer.
+\begin{align}
+	\nu \left( \alpha \right)
+	&= \alpha \nu_e = \frac{\cald H}{\cald J}
+\end{align}
+As mentioned before, the frequency equals the derivative of the Hamiltonian. For an electron in the $n$-th orbit, its action is quantized, so we can rewrite $\nu \left( n, \alpha \right) $ in the form of the derivative of $H$ with respect to $n$.
+\begin{align}
+	\nu \left( n, \alpha \right)
+	&= \alpha \nu \left( n \right) = \frac{\alpha}{h} \frac{\cald H}{\cald n}
+\end{align}
+why rewrite it as the derivative with respect to n? Naturally, it's to apply Born's correspondence principle. This equation is clearly linear, so there is a linear superposition of frequency relations.
+\begin{align}
+	\nu \left( n, \alpha \right) + \nu \left( n, \beta \right)
+	&= \nu \left( n, \alpha + \beta \right)
+\end{align}
+This is the classical situation, or in other words, the situation when n is relatively large in the quantum case. 
+
+Next, let's consider the quantum situation, where the frequency is the difference between energy levels. According to Born's correspondence principle, the derivative in the previous equation becomes a difference, and the form of frequency addition is also different.
+\begin{align}
+	\nu \left( n, n - \tau \right)
+	&= \frac{H \left( n \right) - H \left( n - \tau \right) }{h} \label{eq22}
+\end{align}
+Rather than linear addition, it seems more like vector addition, connecting head to tail. Its physical meaning is simple: going from the fifth floor to the third floor plus going from the third floor to the first floor is equivalent to going from the fifth floor to the first floor.
+\begin{align}
+	\nu \left( n, n - \tau_1 \right) 
+	&+ \nu \left( n - \tau_1, n - \tau_1 - \tau_2 \right) \nonumber \\
+	&= \nu \left( n, n - \tau_1 - \tau_2 \right)\label{eq23}
+\end{align}
+
+Heisenberg's starting point is these two equations, eq.\ref{eq22} and eq.\ref{eq23}. Now he assumes that not only frequency, but also the physical quantity $x$ satisfies this correspondence relation. The next task is to look at $x^2$.
+
+Since we are studying periodic motion, we can expand $x$ into a Fourier series.
+\begin{align}
+	x \left( n, t \right)
+	&= \sum_{\alpha = - \infty}^{\infty} x \left( n, \alpha \right) e^{i \omega \left( n \right) \alpha t}
+\end{align}
+
+we may pay attention to the fact that $x \left( n, t \right)$ is the position of the electron in the $n$-th energy level over time, while $x \left( n, \alpha \right)$ is its Fourier component. Because $x$ is real, we have the relation:
+\begin{align}
+	x \left( n, -\alpha \right)
+	&= x^{\ast} \left( n, \alpha \right)
+\end{align}
+Squaring it directly naturally turns into the product of two indices, alpha and beta. Now, to extract the components, we change alpha to a convolution representation.
+\begin{align}
+	x^2 \left( n, t \right)
+	&= \sum_{\alpha = - \infty}^{\infty} \sum_{\beta = - \infty}^{\infty} x \left( n, \alpha \right) x \left( n, \beta \right) e^{i \omega \left( n \right) \left( \alpha + \beta \right) t} \nonumber \\
+	&= \sum_\gamma \left[ \sum_\beta x \left( n, \beta \right) x \left( n, \gamma - \alpha \right) \right] e^{i \omega \left( n \right) \gamma t} \nonumber \\
+	&= \sum_\alpha x^2 \left( n \alpha \right) e^{i \omega \left( n \right) \alpha t}
+\end{align}
+
+Heisenberg's next task is to find the $x^2$ component in the quantum case. According to Born's correspondence principle, Heisenberg wrote down the following equation:
+\begin{align}
+	x \left( n, t \right)
+	&= \sum_\tau x \left( n, n - \tau \right) e^{i \omega \left( n, n - \tau \right) t}
+\end{align}
+Even though this equation is not an expression using only $x$ and $\tau$, Heisenberg still continued to calculate $x^2$.
+\begin{align}
+	x^2 \left( n, t \right)
+	&= \sum_\tau \left[ \sum_{\tau_1} x \left( n, n - \tau_1 \right) x \left( n, n - \left( \tau -  \tau_1 \right) \right) \right] \nonumber \\
+	& \cdot \exp \left\{ i \left[ \omega \left( n, n - \tau_1 \right) + \omega \left( n, n - \left( \tau - \tau_1 \right) \right) \right] \right\}
+\end{align}
+Here the problem immediately appeared. According to the previous method, after squaring $x$, the sum of $\omega$ in the exponent cannot be calculated. Recall the quantum addition theorem I just mentioned: the indices inside $\omega$ should be connected head-to-tail and finally combined. The problem here is that the head and tail are different and cannot be added.
+
+Here, Heisenberg encountered the problem left by Born: Born's correspondence principle uses the backward difference to correspond to the derivative, so the result would be like this. However, there is no mathematical restriction on Heisenberg using the forward difference to approximate the derivative, as follows:
+\begin{align}
+	\nu \left( n, n - \tau \right)
+	&= \frac{H \left( n \right) - H \left( n - \tau \right) }{h} \label{eq29} \\
+	\nu \left( n + \tau , n \right)
+	&= \frac{H \left( n + \tau \right) - H \left( n \right) }{h} \label{eq30}
+\end{align}
+After some calculations, Heisenberg found that if the Fourier series is defined as eq.\ref{eq31} , he could obtain the desired result.
+\begin{align}
+	x^2 \left( n, n - \tau \right)
+	&= \sum_{\tau_1}  x \left( n, n - \tau_1 \right) x \left( n - \tau_1, n - \tau \right) \label{eq31}
+\end{align}
+Here Heisenberg discovered something miraculous: the product of $x$ and $y$ is not commutative.
+\begin{align}
+	x_n y_n
+	&= \sum_{\tau_1}  x \left( n, n - \tau_1 \right) y \left( n - \tau_1, n - \tau \right) \label{eq32} \\
+	y_n x_n
+	&= \sum_{\tau_1}  y \left( n, n - \tau_1 \right) x \left( n - \tau_1, n - \tau \right) \label{eq33}
+\end{align}
+Heisenberg discovered something that we now take for granted: multiplication does not necessarily commute. What exactly is this thing? Heisenberg could not explain it at the time, but he continued to push forward.
+
+First, try to solve the classical equation of motion:
+\begin{align}
+	\ddot x + f \left( x \right)
+	&= 0
+\end{align}
+calculate the action $J$, and according to Sommerfeld's quantization rule, $J$ should be as follows: 
+\begin{align}
+	J
+	&= \oint_C p_i \,\cald q_i = \int m \dot x^2 \,\cald t = n h
+\end{align}
+The classical case is simple; by substituting the Fourier series.
+\begin{align}
+	x \left(n, t \right)
+	&= \sum_\alpha x \left(n, \alpha \right) e^{i \omega \left( n \right)\alpha t }
+\end{align}
+And integrating over the period of motion, we can directly obtain the classical result.
+\begin{align}
+	J
+	&= m \oint_C \dot x^2 \,\cald t \nonumber \\
+	&= 2 \pi m \sum_{- \infty}^{\infty} \left| x \left( n, \alpha \right) \right|^2 \alpha^2 \omega \left( n \right) = n h
+\end{align}
+Subsequently, he obtained an equation like this for the derivative:
+\begin{align}
+	\frac{\cald J}{\cald n}
+	&= \frac{\cald \left( n h \right)}{\cald n} = h \\
+	\Rightarrow h
+	&= 2 \pi m \sum_{- \infty}^{\infty} \alpha \frac{\cald }{\cald n} \left[ \alpha \omega \left( n \right) \left| x \left( n, \alpha \right) \right|^2 \right]
+\end{align}
+Next, following Born's correspondence principle, he performed the backward difference.
+\begin{align}
+	\alpha \frac{\cald \varphi \left( n \right)}{\cald n}
+	& \leftrightarrow \varphi \left( n \right) - \varphi \left( n - \tau \right) \\
+	\alpha \frac{\cald \varphi \left( n, \alpha \right)}{\cald n}
+	& \leftrightarrow \varphi \left( n + \tau, n \right) - \varphi \left( n, n - \tau \right)
+\end{align}
+After some calculations, Heisenberg obtained this relation:
+\begin{align}
+	h
+	&= 4 \pi m \sum_{\tau = 0}^{\infty} \left[ \left| x \left( n, n + \tau \right) \right|^2 \omega \left( n, n + \tau \right) \right] \nonumber \\
+	&- 4 \pi m \sum_{\tau = 0}^{\infty} \left[ \left| x \left( n, n - \tau \right) \right|^2 \omega \left( n, n - \tau \right) \right] \label{eq42}
+\end{align}
+
+It seems to say that $h$ can be expressed as the difference between two expressions. Since $x$ is real, the tau here is transformed into a summation from $0$ to $\infty$. Heisenberg realized that the ground state $x$ cannot be lowered to a lower energy level, so there must be an n such that $x = 0$. This idea provided the initial condition.
+
+Eq.\ref{eq42} can be said to be the core equation in Heisenberg's thinking. By solving the equation of motion for $\omega$, and then using the recursive sequence to find $x$.
+
+Of course, in this paper \cite{Heisenberg1925}, Heisenberg also tried to calculate a few simple cases. The first example was, of course, the harmonic oscillator.
+\begin{align}
+	\ddot x + \omega_0^2 x
+	&= 0
+\end{align}
+We are all very familiar with the classic solution of this thing.
+\begin{align}
+	x
+	&= A_1 \cos \left( \omega t \right) \Rightarrow \omega = \omega_0
+\end{align}
+Now, let's switch to the quantum situation; because this solution is simple enough and does not have higher harmonics, we can know that:
+\begin{align}
+	A_1
+	&= A \left( n, 1 \right) \longleftrightarrow A \left( n, n - 1 \right) \\
+	\omega
+	&= \omega \left( n, 1 \right) \longleftrightarrow \omega \left( n, n - 1 \right)
+\end{align}
+We can quickly solve for $x$ in the quantum situation,
+\begin{align}
+	x
+	&= A \left( n, n - 1 \right) \cos \left[ \omega \left( n, n - 1  \right) t \right]
+\end{align}
+and replace $\cos$ using Euler's formula to obtain:
+\begin{align}
+	x
+	&= \frac{A \left( n, n - 1 \right)}{2} e^{i \omega \left( n, n - 1 \right) t} \nonumber \\
+	&+ \frac{A \left( n - 1, n \right)}{2} e^{i \omega \left( n - 1, n \right) t}
+\end{align}
+Here $\omega$ is the transition frequency, so swapping the indices is equivalent to changing from emission to absorption, which will introduce a negative sign. $x$ is a real number, and it can be observed from the Fourier transform that exchanging the values does not change the result.
+\begin{align}
+	x \left( n, n - \tau \right)
+	&= x \left( n - \tau, n \right) \\
+	\omega \left( n, n - \tau \right)
+	&= - \omega \left( n - \tau, n \right)
+\end{align}
+Therefore, the modified Sommerfeld condition by Heisenberg, which appears to be an infinite sum, actually only consists of two summation terms. Eq.\ref{eq42} becomes:
+\begin{align}
+	\frac{h}{\pi m \omega_0}
+	&= \left[ A \left( n, n + 1 \right) \right]^2 - \left[ A \left( n, n - 1 \right) \right]^2
+\end{align}
+This recurrence equation has a solution because we know that $A$ is invariant under index permutation and has a lower bound, meaning it cannot transition further down from the ground state. Therefore, we can solve for $A$. Here, I will skip the tedious process and directly enjoy the fruits of the predecessors' efforts.
+\begin{align}
+	A \left( n, n - 1 \right)
+	&= \sqrt{\frac{n h}{\pi m \omega_0}}
+\end{align}
+In principle, at this step, we have found $x\left( n \right)$; but recall that $x$ is an unobservable quantity, and what Heisenberg wanted to find was an observable quantity, which is energy.
+
+Energy, which is the Hamiltonian of the system, is expressed as follows:
+\begin{align}
+	H
+	&= \frac{1}{2} m \dot x^2 + \frac{1}{2} m \omega_0^2 x^2
+\end{align}
+Just like this, we can write out the Hamiltonian of the system:
+\begin{align}
+	x^2 \left( n, t \right)
+	&= \sum_\tau \left[ \sum_{\tau_1} x \left( n, n - \tau_1 \right) x \left( n - \tau_1, n - \tau \right) \right] \nonumber \\
+	&\times \exp\left[ i \omega \left( n, n - \tau \right) t \right] \\
+	\dot x^2 \left( n, t \right)
+	&= \sum_{\tau} \left[ \sum_{\tau_1}
+	\begin{matrix}
+	i \omega \left( n, n - \tau_1 \right) x \left( n, n - \tau_1 \right) \\
+	\times i \omega \left( n - \tau_1, n - \tau \right) \\
+	\times x \left( n - \tau_1, n - \tau \right)
+	\end{matrix} 
+	\right]
+\end{align}
+Note that when the indices inside omega are exchanged, a negative sign should be added.
+
+Heisenberg pointed out that due to energy conservation, H must be independent of time. Therefore, the only possibility is that the exponent is 0, so H should be able to be expressed as:
+\begin{align}
+	H \left( n, t \right)
+	&= \sum_\tau H \left( n, n - \tau \right) e^{i \omega \left( n, n- \tau \right) t } \nonumber \\
+	&= H \left( n, n \right)
+\end{align}
+The remaining work is just substituting and calculating.
+\begin{align}
+	H
+	&= \frac{1}{2} m \left[ \dot x^2 \left( n, n \right) + \omega_0^2 x^2 \left( n, n \right) \right] \nonumber \\
+	&= \frac{1}{2} m \sum_{\tau_1}
+	\left[
+	\begin{matrix}
+	\omega \left( n, n - \tau_1 \right) \omega \left( n, n - \tau_1 \right) \\
+	\times x \left( n, n - \tau_1 \right) x \left( n - \tau_1, n \right) \\
+	+ \omega_0^2 x \left( n, n - \tau_1 \right) x \left( n - \tau_1, n \right)
+	\end{matrix} 
+	\right] \nonumber \\
+	&= \frac{1}{2} m \omega_0^2\left[ \frac{1}{4} A^2 \left( n, n - 1 \right) + \frac{1}{4} A^2 \left(n, n + 1 \right) \cdot 2 \right] \nonumber \\
+	&= \frac{1}{4} m \omega_0^2 \cdot \frac{h}{\pi m \omega_0} \left( n + n + 1 \right)
+\end{align}
+In the end, the result Heisenberg obtained is as follows:
+\begin{align}
+	H
+	&= \frac{h \omega_0}{2 \pi} \left( n + \frac{1}{2} \right) = \hbar \omega_0 \left( n + \frac{1}{2} \right)
+\end{align}
+Isn't it exactly the same as what's written in the textbooks? Notice that the energy of the harmonic oscillator is independent of its mass. At the same time, Heisenberg also discovered a term of $\frac{1}{2}$ appearing here.
+
+Heisenberg concluded that the energy spectrum of the oscillators does not actually start from $0$, but rather has a zero-point energy. Since the spectral lines are obtained by taking differences, it is not immediately apparent at first glance.
+Heisenberg didn't stop there; in fact, he calculated many different models, which I won't go into detail about here.
+
+This is a groundbreaking paper. Here, I quote his original words from his autobiography, showing Heisenberg's thoughts after completing this series of pioneering work:
+\begin{quotation}
+	``It was about three o'clock in the morning when the results of the calculations lay before me. At first I was deeply shocked. I was so excited that I could not think of sleeping. So I left the house and waited for the east on top of the rock.''\cite{heisenberg1971physics}
+\end{quotation}
+Heisenberg has created the first form of quantum mechanics - \textbf{matrix mechanics}.
+
+However, to truly connect the strange mathematics in Heisenberg's paper with matrices, we had to wait until Born read this paper and discussed it with Jordan before it could be considered truly complete.
+
+We know that physicists in 1925 were not familiar with matrices. But fortunately, after seeing the strange, non-commutative multiplication in Heisenberg's paper, Born quickly thought of matrices, a mathematical tool he had learned before. However, he needed an assistant. Born first went to Pauli, but Pauli was not interested in this kind of mathematics that lacked physical meaning. Therefore, Born turned to his former student and assistant: Pascual Jordan.
+
+Let's first look at Born's reaction after seeing Heisenberg's paper. Born astutely noticed that the non-commutative multiplication could be used as a breakthrough point. He first rewrote the notation:
+\begin{align}
+	\left(xy \right) \left( n, m\right)
+	&= \sum x \left( n, k\right) y \left( k, m \right) \nonumber \\
+	\neq \left(yx \right) \left( n, m\right)
+	&= \sum y \left( n, k\right) x \left( k, m \right)
+\end{align}
+The product of two transition amplitudes, when Fourier transformed, corresponds to the respective matrix element. Next, we define the quantized momentum amplitude, whose expression should be the derivative of the transition matrix element:
+\begin{align}
+	p 
+	&= m \dot{x}(n,n-\tau) \nonumber \\
+	&= m\sum_{\tau} x(n,n-\tau)i\omega(n,n-\tau)e^{i\omega(n,n-\tau)t}
+\end{align}
+Born's insight was that $p$ hare and $x$ above are conjugate variables, and they do not commute. Therefore, the difference between their forward and reverse product might have a very important meaning.
+\begin{align}
+	px 
+	&= m\sum_{\tau_1} 
+	\left[
+	\begin{matrix}
+	x(n,n-\tau_1) \\
+	\times i\omega(n,n-\tau_1)x(n-\tau_1,n-\tau) \\
+	\times e^{i(\omega(n,n-\tau_1)+\omega(n-\tau_1,n-\tau))t}
+	\end{matrix} 
+	\right] \nonumber \\
+	&= m\sum_{\tau_1}
+	\left[
+	\begin{matrix}
+	x(n,n-\tau_1) \\
+	\times i\omega(n,n-\tau_1)x(n-\tau_1,n-\tau) \\
+	\times e^{i\omega(n,n-\tau)t}
+	\end{matrix} 
+	\right]
+\end{align}
+To keep things simple, Born set $\tau = 0$ and calculated the diagonal matrix elements of the product. Setting $\tau = 0$ actually has a strong physical meaning, as it indicates that the diagonal elements of the $p x$ product do not change with time.
+\begin{align}
+	(px)(n,n) 
+	\left[
+	\begin{matrix}
+	x(n,n-\tau_1) \\
+	\times iw(n,n-\tau_1)x(n-\tau_1,n) 
+	\end{matrix} 
+	\right]
+\end{align}
+Taking the difference between the two, one can obtain this relation. Born noticed that this relation is almost the same as the modified Sommerfeld quantization condition derived by Heisenberg.
+
+He used Bohr's transition condition to simplify it, and indeed, the sum on the right-hand side was almost exactly the same, only differing by a negative sign. Born was overjoyed and immediately compared the two sides.
+
+The final result is that the diagonal matrix elements of $p x - x p$ are a constant completely independent of the particle. 
+\begin{align}
+	(px-xp)(n,n) 
+	&= \frac{h}{2\pi i} \\ 
+	\hat P \hat X - \hat X \hat P
+	&= \frac{h}{2\pi i} \hat I
+\end{align}
+
+
+This equation is so concise, containing only Planck's constant.
+
+Although this is only the result for the diagonal elements, Born believed that these two matrices should satisfy this commutation relation. In fact, the off-diagonal elements should all be 0. Of course, this is not just a random guess.
+
+We can easily think that the off-diagonal elements actually correspond to the time-varying terms, and the stationary states do not change with time, so these terms must be 0. However, Born himself could not prove it.
+
+Here, let's appreciate how Jordan introduced the ancient mathematical language of matrices to physicists for the next hundred years in just one afternoon.
+\begin{align}
+	\ddot x + f \left( x \right)
+	&= 0
+\end{align}
+Starting from this equation, Jordan treated $x$ as a matrix and multiplied both sides of the equation by an $x$. This resulted in two different equations:
+\begin{align}
+	x \ddot x + x f \left( x \right)
+	&= 0 \label{eq60} \\
+	\ddot x x + f \left( x \right) x
+	&= 0 \label{eq61}
+\end{align}
+Of course, we know that
+\begin{align}
+	x f \left( x \right)
+	&= f \left( x \right) x
+\end{align}
+because x disappears in the power series expansion of f. So, we subtract eq.\ref{eq60} from eq.\ref{eq61} times $m$ and obtain:
+\begin{align}
+	m \left( x \ddot x - \ddot x x \right)
+	&= 0
+\end{align}
+Then, we have obtained an equation where the time derivative is equal to $0$:
+\begin{align}
+	m \frac{\cald }{\cald t} \left( x \dot x - \dot x x \right)
+	&= 0 \label{eq70}
+\end{align}
+Intuitively, if we consider $m \dot x$ as momentum $p$, then eq.\ref{eq70} is actually the time derivative of the commutator:
+\begin{align}
+	\frac{\cald }{\cald t} \left( x p - p x \right)
+	&= 0
+\end{align}
+It means that the entire matrix does not change with time. The diagonal elements have been calculated, and the off-diagonal elements have an exponential term. The time dependence of the exponential term certainly cannot be eliminated, so for it to not change with time, the coefficient must be $0$. This simply proves the difficulty Born encountered before.
+
+At this point, we have provided a concise description of the story of the birth of matrix mechanics. Many calculation details have been omitted, but the overall framework can be considered complete.
+\section{WAVE MECHANICS}
+According to the historical process, it was time for Schrödinger's wave mechanics to make its appearance. 
+
+It was the end of 1925, and a physics symposium was held every two weeks in Zurich, Switzerland. On one occasion, the organizer Peter Debye invited Schrödinger to present on de Broglie's doctoral thesis on wave-particle duality. During that period, Schrödinger was studying gas theory, and he came into contact with de Broglie's doctoral thesis through reading Einstein's discourse on Bose-Einstein statistics, gaining a profound understanding of this aspect. 
+
+In the symposium, he elaborated on wave-particle duality with great enthusiasm, and everyone listened with keen interest. Debye pointed out that since particles possess wave properties, there should be a wave equation that can accurately describe this quantum property.
+
+Debye's opinion greatly inspired and encouraged Schrödinger, who began to search for this wave equation. The simplest and most basic method to test this equation was to use it to describe the physical behavior of bound electrons within the hydrogen atom, and it must be able to reproduce the theoretical results of the Bohr model. Additionally, this equation must also be able to explain the fine structure given by the Sommerfeld model.
+
+Now, let us follow Schrödinger's\cite{schrodinger2003collected} original paper and his unpublished content to review how wave mechanics became a rising star in the world of quantum mechanics. 
+
+Schrödinger's starting point was the wave equation for the hydrogen atom model. As we are well aware, quantum mechanics at that time was proposed to solve the problem of atomic radiation. For a model like the hydrogen atom, it is in a stationary state, which means it is independent of time. Therefore, we can write down the stationary wave equation:
+\begin{align}
+	\nabla^2 \psi + k^2 \psi
+	&= 0
+\end{align}
+Here, k is the wave vector, which can be found in de Broglie's original paper\cite{refId0}. Schrödinger's first step was to find the expression for k here using common sense. Considering a virtual wave carried by an electron, de Broglie had already calculated its phase velocity, which is faster than light and can be expressed as follows:
+\begin{align}
+	V
+	&= \frac{\omega}{k} = \frac{c^2}{v} = \frac{\gamma m_0 c^2}{\gamma m_0 v} = \frac{E}{p} = \frac{h \nu}{\gamma m_0 v}
+\end{align}
+Schrödinger noticed that $V$ here is equal to energy divided by momentum. To represent the environment of the hydrogen atom, one should try to make some adjustments to the energy. The energy of the hydrogen atom, obviously, includes not only the kinetic energy of the electron but also the electrostatic potential energy. The total energy can be written as the following expression:
+\begin{align}
+	E
+	&= h \nu = \gamma m_0 c^2 - \frac{e^2}{4 \pi \varepsilon_0 r}
+\end{align}
+This equation contains the velocity $v$ of the electron, which is hidden in gamma.
+\begin{align}
+	\gamma
+	&= \frac{1}{\sqrt{1 - \left( \frac{v}{c} \right)^2}} = \frac{1}{m_0 c^2} \left( h \nu + \frac{e^2}{3 \pi \varepsilon_0 r} \right)
+\end{align}
+With the velocity $v$, we can solve for $V$:
+\begin{align}
+	\frac{v}{c}
+	&= \sqrt{1 - \frac{m_0^2 c^4}{\left( h \nu + \frac{e^2}{4 \pi \varepsilon_0 r} \right)^2}}
+\end{align}
+Now, substituting the velocity into the expression for the phase velocity, we can immediately solve for k and find that it is independent of the velocity:
+\begin{align}
+	k
+	&= \frac{2 \pi \nu}{V} \nonumber \\
+	&= \frac{2 \pi m_0 c}{h} \sqrt{\left( \frac{h \nu}{m_0 c^2} + \frac{e^2}{4 \pi \varepsilon_0 m_0 c^2 r} \right)^2 - 1}
+\end{align}
+After squaring and substituting, this is Schrödinger's relativistic wave equation:
+\begin{align}
+	\frac{4 \pi^2 m_0^2 c}{h^2} \left[ \left( \frac{h \nu}{m_0 c^2} + \frac{e^2}{4 \pi \varepsilon_0 m_0 c^2 r} \right)^2 - 1 \right] \psi
+	&= - \nabla^2 \psi
+\end{align}
+This partial differential equation looks complex but is not difficult to solve. First, split the wave function into three independent parts, then expand the Laplacian operator to decompose it into three ordinary differential equations:
+\begin{align}
+	\psi \left( r, \theta, \varphi \right)
+	&= R \left( r \right) \Theta \left( \theta \right) \Phi \left( \varphi \right)
+\end{align}
+Since most of the content is independent of the angle, the angular part is simply a spherical harmonic function.
+\begin{align}
+	Y_l^m \left( \theta, \varphi \right)
+%	&= \Theta \left( \theta \right) \Phi \left( \varphi \right) \nonumber \\
+	&= \left( -1 \right)^m \sqrt{\frac{2 l + 1}{4 \pi} \frac{\left( l - m \right)!}{\left( l + m \right)!}} P_{l}^m \left( \cos \theta \right) e^{i m \varphi}
+\end{align}
+Schrödinger also easily solved the discrete energy levels:
+\begin{align}
+	E
+	&= m_0 c^2 \left[ 1 + \frac{\alpha^2}{\left( n_r + \sqrt{\left( k + \frac{1}{2} \right)^2 - \alpha^2} - \frac{1}{2} \right)^2} \right]^{- \frac{1}{2}} \nonumber \\ 
+	&- m_0 c^2
+\end{align}
+However, such a result was very disappointing to him. At that time, the widely accepted energy spectrum of the hydrogen atom was the Bohr-Sommerfeld model, and its form was as follows:
+\begin{align}
+	E
+	&= m_0 c^2 \left[ 1 + \frac{\alpha^2}{\left( n_r + \sqrt{n_{\varphi} - \alpha^2} \right)^2} \right]^{- \frac{1}{2}} - m_0 c^2
+\end{align}
+We can see that although the form of the results is very similar, Schrödinger's result has some additional $\frac{1}{2}$ terms. The appearance of these half-integers immediately violates Sommerfeld's quantization condition.
+
+If we examine Schrödinger's approach from our current perspective, we can quickly understand the reason for his failure: once relativity is considered, the electron's spin cannot be ignored. Later, Schrödinger decided to take a step back and instead explore the solution in the non-relativistic case. In the non-relativistic case, the form of the energy is simply the square of the velocity:
+\begin{align}
+	h \nu
+	&= m_0c^2 + \frac{1}{2} m_0 v^2
+\end{align}
+Following the previous process, we can similarly solve for the superluminal $V$:
+\begin{align}
+	V
+	&= \frac{E}{p} = \frac{h \nu}{\sqrt{2 m_0 \left( h \nu - m_0 c^2 + \frac{e^2}{4 \pi \varepsilon_0 r} \right)}}
+\end{align}
+The result is much simpler in comparison. Next, similarly substitute the phase velocity and find $k$, then express the wave equation using $k$.
+\begin{align}
+	\nabla^2 \psi + \frac{8 \pi^2 m_0}{h^2} \left( h \nu - m_0 c^2 + \frac{e^2}{4 \pi \varepsilon_0 r} \right) \psi
+	&= 0
+\end{align}
+Finally, the expression for the energy can be written as:
+\begin{align}
+	E
+	&= h \nu = m_0 c^2 - \frac{Rh \cdot c}{\left( n_r + l \right)^2} = m_0 c^2 - \frac{Rh \cdot c}{n^2}
+\end{align}
+The familiar $n^2$ appears. Schrödinger obtained an astonishing result as he wished: the energy of the standing wave is the stationary state energy of the hydrogen atom, and the energy difference is the hydrogen atom spectral line formula.
+
+This result also revealed the origin of quantization for integers, which does not come from anyone's mandatory requirement but from the constraints of the wave equation itself. In the derivation above, the concept of integers was not considered at all; it appeared naturally in a form similar to the number of nodes in a standing wave. Schrödinger revealed that, according to de Broglie's matter waves, any matter is accompanied by waves that are completely consistent with its physical properties. The wave equation is essentially an eigenvalue equation that can constrain related physical quantities and naturally introduce integer characteristics. What Schrödinger needed to do next was to generalize this equation and formally derive the action integral form. I will skip the details of this part for now. 
+
+We can confidently say that the moment this derivation was completed, was also the moment \textbf{wave mechanics} was formally born. 
+
+Einstein praised that the inspiration for this work flowed like a spring from a true genius. Einstein felt that Schrödinger had made a decisive contribution. Since the wave mechanics created by Schrödinger involved familiar wave concepts and mathematics, rather than the abstract and unfamiliar matrix algebra in matrix mechanics, quantum physicist were very willing to start learning and applying wave mechanics.
+\section{THE CONVERGENCE}
+The period from 1925 to 1926 was the birth of quantum mechanics. In just these two years, Heisenberg and Schrödinger successively proposed two seemingly completely different theoretical pictures. Although their styles were vastly different, they both successfully explained various phenomena at the time.
+
+The core concept of matrix mechanics is the commutation relation I mentioned earlier:
+\begin{align}
+	x p - p x
+	&= i \hbar, \quad i \hbar \frac{\cald a}{\cald t} = \left[a~H \right]
+\end{align}
+This non-commutative relationship is not necessarily limited to matrices; any system that satisfies this rule can actually work. Heisenberg's matrix is just a convenient mathematical tool for understanding and performing concrete calculations on abstract concepts. However, we can see that although matrix mechanics abandons the classical descriptive language, it is still essentially a theory based on particles.
+
+On the wave mechanics side, it is the differential equations familiar to physicists and descriptions similar to fluid mechanics:
+\begin{align}
+	\nabla^2 \psi + \frac{2 m }{\hbar^2} \left( E - V \right) \psi
+	&= 0
+\end{align}
+However, this lack of unification didn't actually last long, only about two months. Within two months of proposing wave mechanics, Schrödinger successfully completed the unification of the two theories, a speed that can only leave mere mortals far behind. Now, let's follow Schrödinger's original paper\cite{PhysRev.28.1049} and appreciate the master's thinking.
+
+Schrödinger's first step was to start with the commutation relation:
+\begin{align}
+	x p - p x
+	&= i \hbar
+\end{align}
+In a sense, the difference between the various camps is their different understanding of this equation. For Heisenberg and Born, $x$ and $p$ here are matrices, while Dirac sees them as $Q$-numbers, and Schrödinger's understanding is that they are differential operators. One way to understand operators is as operations; putting on socks before shoes is certainly different from putting on shoes before socks.
+
+Let's clarify Schrödinger's thought process here based on his original words: Through simple observation, the starting point for matrix construction can be given. For two sets of variables $q_n$ and $p_n$, consider the functions they form.
+\begin{align}
+	q_1, q_2
+	&\cdots, q_n \\
+	p_1, p_2
+	&\cdots, p_n
+\end{align}
+Heisenberg's special calculation rules coincide perfectly with the rules of linear differential operators on a set of $n$ variables $q_1$ to $q_n$. So it needs to be coordinated in such a way that each $p_l$ in the function is replaced by the partial derivative with respect to $q_l$.
+\begin{align}
+	p_l
+	&\Rightarrow \frac{\partial}{\partial q_l}
+\end{align}
+At this time, $q_l$ and $q_m$, and the partial derivatives with respect to $q_l$ and $q_m$ are completely commutative.
+\begin{align}
+	q_l
+	&\longleftrightarrow q_m \\
+	\frac{\partial}{\partial q_l}
+	&\longleftrightarrow \frac{\partial}{\partial q_m}
+\end{align}
+Of course, when $m \neq l$, the partial derivative and the variable are also commutative. Except when $m = l$, at this time, the two are no longer equal after swapping, and the difference will yield the identity operator.
+\begin{align}
+	m \neq l
+	&\Rightarrow \frac{\partial}{\partial q_l} \longleftrightarrow q_m \\
+	m = l
+	&\Rightarrow \frac{\partial}{\partial q_l} q_m - q_m \frac{\partial}{\partial q_l} = 1
+\end{align}
+Specifically, this operator acting on any function will result in the original function, which means the operator is unitary. This simple fact is reflected in the matrix as Heisenberg's commutation rule.
+
+Let me rewrite Schrödinger's last argument using modern mathematics language here:
+\begin{align}
+	\left[ \frac{\partial}{\partial q} q - q \frac{\partial}{\partial q} \right] \psi \left( q \right)
+	&= \frac{\partial}{\partial q} \left[ q \psi \left( q \right) \right] - q \frac{\partial}{\partial q} \psi \left( q \right) \nonumber \\
+	&= \psi \left( q \right) + q \frac{\partial \psi}{\partial q} - \frac{\partial \psi}{\partial q} \nonumber \\
+	&= \psi \left( q \right)
+\end{align}
+After successfully explaining matrix operations using operators, Schrödinger continues to demonstrate how to transform a function into an operator. First, for a power series function F in terms of q and p, one of its terms might look like this:
+\begin{align}
+	F \left( q, p\right)
+	&= f \left( q \right) p_1 q_2 q_3 g \left( q \right) p_4 h \left( q \right) p_5 p_6 \label{eq98}
+\end{align}
+Schrödinger says that the variable $q$ is left unchanged, and all $p$ variables are replaced by partial derivatives with respect to $q$. At the same time, Schrödinger multiplies a constant $K$ here, in preparation for introducing the Planck constant later on.
+\begin{align}
+	p_i
+	&\rightarrow K \frac{\partial}{\partial q_i} \\
+	F \left( q, p\right)
+	&\rightarrow \left[F, \cdot \right]
+\end{align}
+Schrödinger's notation $\left[F, \cdot \right]$ here is actually $\hat F$ in modern mathematics language.
+
+Schrödinger states that when replacing variables, the original order of $p$ must be properly arranged. Just like matrix multiplication, the order must be strictly followed.
+
+Specifically, after replacement, eq.\ref{eq98} will become
+\begin{align}
+	\hat F
+	&= f \left( q \right) K^3 \frac{\partial^3}{\partial q_1 \partial q_2 \partial q_3} g \left( q \right) K \frac{\partial}{\partial q_4} h\left( q \right) \frac{\partial^2}{\partial q_5 \partial q_6}
+\end{align}
+Since $K$ is a constant, it can be placed anywhere, and the partial derivatives cannot cross over functions, but their order can be swapped.
+
+At this point, some people may have questions: Who determines the order of $p$ in $F$? Why should it follow this order? Won't choosing a different permutation of $F$ result in a different operator? This is a very important question, and there are some solutions like the Weyl equation. Here, let's just pretend we haven't discovered this problem.
+
+In summary, this is roughly how the operator works.
+\begin{align}
+	\left[G, \cdot \right] \left[F, \cdot \right] f
+	&= \left[GF, \cdot \right] f \\
+	&= \hat G \hat F f \neq \hat F \hat G f
+\end{align}
+Schrödinger's notation in his paper is somewhat complex, so I have supplemented it with our current mathematical notation.
+
+The next question is: What exactly is a matrix here? Schrödinger's answer is the integral of the operator. First, for these variables $q$, Schrödinger integrates them into the variable $x$. Then, integrating over all $q$ can be written as a single integral over $x$.
+\begin{align}
+	\int \,\cald x
+\end{align}
+
+Then Schrödinger introduces an orthonormal complete set of functions $u$, which are functions of the variable $x$.
+\begin{align}
+	u_1 \left( x \right), u_2 \left( x \right), u_3 \left( x \right) \cdots \nonumber
+\end{align}
+The normalization condition is as follows, where $\rho$ is the weight function.
+\begin{align}
+	\int \rho \left( x \right) u_i  \left( x \right) u_j  \left( x \right) \,\cald x
+	&=
+	\begin{cases}
+		0 & i \neq j \\
+		1 & i = j
+	\end{cases}
+\end{align}
+Then, Schrödinger can use these eigenfunctions to construct matrix elements through integration.
+
+Here, Schrödinger defines the matrix element $F^{kl}$ as an integral of the operator acting on the eigenfunction $u$.
+\begin{align}
+	F^{kl}
+	&= \int \rho \left( x \right) u_k \left( x \right) \left[ \hat F u_l \left( x \right) \right] \,\cald x
+\end{align}
+
+According to his previous statement, the position is a scalar function, and the momentum is a partial derivative function. Then the corresponding matrix element is
+\begin{align}
+	q_l^{ik}
+	&= \int \rho \left( x \right) u_i \left( x \right) q_l u_k \left( x \right) \,\cald x \\
+	p_l^{ik}
+	&= \int \rho \left( x \right) u_i \left( x \right) K \left[ \frac{\partial u_k \left( x \right)}{\partial q_l} \right] \,\cald x
+\end{align}
+
+Using these relations, Schrödinger quickly obtained Born's quantization condition. The process is as follows:
+\begin{align}
+	\left( q_l p_l - p_l q_l \right)^{ik}
+	&= \int \rho \left( x \right) u_i \left( x \right) \hat F u_k \left( x \right) \,\cald x \nonumber \\
+	&= - K \int \rho \left( x \right) u_i \left( x \right) u_k \left( x \right) \nonumber \\
+	&=
+	\begin{cases}
+		0  & i \neq k \\
+		-K & i = k
+	\end{cases}
+\end{align}
+By calculating the previously mentioned commutation matrix elements and comparing them with Born's relation, Schrödinger can determine the value of $K$.
+\begin{align}
+	qp - pq
+	&= i \hbar \Rightarrow
+	\begin{cases}
+		K   = - i \hbar \\
+		p_i = - i \hbar \frac{\partial}{\partial q_i}
+	\end{cases}
+\end{align}
+The final conclusion is that $K = - i \hbar$, and at the same time, the momentum operator is also determined.
+
+Therefore, any wave mechanics equation can be consistently transformed into a matrix equation, where the operation of $F$ on psi corresponds to the matrix $F^{ik}$ acting on the column vector $a_k$, and the components of the column vector are the Fourier series of psi. At this point, matrix mechanics and wave mechanics have reached their moment of convergence.
+\section{SUMMARY}
+In this article, I tried to sort out the development history of quantum mechanics from 1925 to 1926, starting from some quantization rules of the old quantum theory, Born's attempts, to the dawn Heisenberg encountered on the island. I can say that the dawn Heisenberg encountered on the island was not only his personal dawn but also the dawn of the discipline of quantum mechanics. After this, Schrödinger proposed wave mechanics, opening up a new world in the garden of quantum mechanics. In less than a summer vacation, Schrödinger, with his excellent mathematical abilities and keen observation skills, built the first bridge between wave mechanics and matrix mechanics. At the same time, the greatest physicists of that era, such as Heisenberg, Pauli, Born, Jordan, Dirac, and others, were all working hard. Through the efforts of these predecessors, bridges connecting wave mechanics and matrix mechanics were built one after another, and the garden of quantum mechanics ushered in its most prosperous moment.
+
+\end{multicols}
+\section*{ACKNOWLEDGMENTS}
+This is a final report for a course on the history of physics, written by a senior student from the Department of Physics at National Taiwan University. Please note that I have tried my best to eliminate typos and errors. So if there are any, they are unintentional, and I ask for your understanding and forgiveness.
+\section*{AUTHOR DECLARATIONS}
+\subsection*{Conflict of Interest}
+The authors have no conflicts to disclose.
+\newpage
+\nocite{*}
+\bibliographystyle{unsrt}
+\bibliography{./bibliography.bib}
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
